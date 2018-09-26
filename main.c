@@ -88,8 +88,7 @@ int main(void)
     // Perform Operation
   }
 
-  printf("Exiting Hardware Evaluation Mode.\n")
-	  ;
+  printf("Exiting Hardware Evaluation Mode.\n");
 
   return 0;
 

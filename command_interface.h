@@ -7,9 +7,10 @@
 #ifndef COMMAND_INTERFACE_H
 #define COMMAND_INTERFACE_H
 
+#include "stdint.h"
 
-typedef int (*commandValidationFunc)(char* params);
-typedef int (*commandExecuteFunc)(char* params);
+typedef uint8_t (*commandValidationFunc)(char* params);
+typedef uint8_t (*commandExecuteFunc)(char* params);
 
 
 typedef struct {

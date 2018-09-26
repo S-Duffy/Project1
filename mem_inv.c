@@ -2,24 +2,26 @@
 
 
 #include "command_interface.h"
-int MemInvValidate(char* params);
-int MemInvExecute(char* params);
+#include "stdint.h"
+
+uint8_t MemInvValidate(char* params);
+uint8_t MemInvExecute(char* params);
 
 COMMAND_INTERFACE_STRUCT MemInvCommandInterface =
 {
-	"MINV",
-	"Frees the block of memory allocated by MALL. Takes no arguments Ex: MFRE",
-	MemInvValidate,
-	MemInvExecute,
+  "MINV",
+  "Frees the block of memory allocated by MALL. Takes no arguments Ex: MFRE",
+  MemInvValidate,
+  MemInvExecute,
 };
 
 
-int MemInvValidate(char* params)
+uint8_t MemInvValidate(char* params)
 {
-	return 1;
+  return 1;
 }
 
-int MemInvExecute(char* params)
+uint8_t MemInvExecute(char* params)
 {
-	return 1;
+  return 1;
 }

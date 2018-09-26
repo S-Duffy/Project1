@@ -2,24 +2,29 @@
 
 
 #include "command_interface.h"
-int MemFreeValidate(char* params);
-int MemFreeExecute(char* params);
+#include "mem_alloc.h"
+#include "stdint.h"
+#include <stdlib.h>
+
+uint8_t MemFreeValidate(char* params);
+uint8_t MemFreeExecute(char* params);
 
 COMMAND_INTERFACE_STRUCT MemFreeCommandInterface =
 {
-	"MFRE",
-	"Frees the block of memory allocated by MALL. Takes no arguments Ex: MFRE",
-	MemFreeValidate,
-	MemFreeExecute,
+  "MFRE",
+  "Frees the block of memory allocated by MALL. Takes no arguments Ex: MFRE",
+  MemFreeValidate,
+  MemFreeExecute,
 };
 
 
-int MemFreeValidate(char* params)
+uint8_t MemFreeValidate(char* params)
 {
-	return 1;
+  return 1;
 }
 
-int MemFreeExecute(char* params)
+uint8_t MemFreeExecute(char* params)
 {
-	return 1;
+  free(memBlockPtr);
+  return 1;
 }

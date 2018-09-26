@@ -4,7 +4,7 @@
 
 extern COMMAND_INTERFACE_STRUCT MemAllocCommandInterface;
 
-
+extern uint32_t* memBlockPtr;
 
 
 

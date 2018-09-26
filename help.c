@@ -18,8 +18,8 @@
 #include "mem_write_pattern.h"
 #include "mem_ver_pattern.h"
 
-int HelpValidate(char* params);
-int HelpExecute(char* params);
+uint8_t HelpValidate(char* params);
+uint8_t HelpExecute(char* params);
 
 COMMAND_INTERFACE_STRUCT HelpCommandInterface =
 {
@@ -42,23 +42,23 @@ COMMAND_INTERFACE_STRUCT* commandInterfacesForHelp[] =
   NULL,
 };
 
-int HelpValidate(char* params)
+uint8_t HelpValidate(char* params)
 {	
   return 1;
 }
 
-int HelpExecute(char* params)
+uint8_t HelpExecute(char* params)
 {
   uint8_t i = 0;
 
-    printf("Supported Commands are:\n");
-    // loop through supported command
-	while(commandInterfacesForHelp[i] != NULL)
-	{
-	  if(commandInterfacesForHelp[i] -> commandHelpString != NULL)
-	  {
-		printf("%s: %s\n", commandInterfacesForHelp[i] -> commandString, commandInterfacesForHelp[i] -> commandHelpString);
-	  }
-	  i += 1;
-	}
+  printf("Supported Commands are:\n");
+  // loop through supported command
+  while(commandInterfacesForHelp[i] != NULL)
+  {
+    if(commandInterfacesForHelp[i] -> commandHelpString != NULL)
+    {
+      printf("%s: %s\n", commandInterfacesForHelp[i] -> commandString, commandInterfacesForHelp[i] -> commandHelpString);
+    }
+    i += 1;
+  }
 }
