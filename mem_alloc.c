@@ -1,4 +1,14 @@
-
+/************************************************************************
+ *
+ * File: mem_alloc.c
+ * Description: Implementation of the allocate memory command
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
 
 
 
@@ -8,14 +18,26 @@
 #include "stdio.h"
 #include "string.h"
 
+/**
+ * Name: MemAllocValidate
+ * Description: Verify the parameters for the allocate memory Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
 uint8_t MemAllocValidate(char* params);
-uint8_t MemAllocExecute(char* params);
+
+/**
+ * Name: MemAllocExecute
+ * Description: Execute the allocat memory command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void MemAllocExecute(char* params);
 
 uint32_t* memBlockPtr = NULL;
-
-uint16_t placeValues[] = {
-	1, 10, 100, 1000, 10000,
-};
+uint32_t memBlockSizeBytes = 0;
 
 COMMAND_INTERFACE_STRUCT MemAllocCommandInterface =
 {
@@ -25,31 +47,51 @@ COMMAND_INTERFACE_STRUCT MemAllocCommandInterface =
   MemAllocExecute,
 };
 
-uint32_t convStringToNum(char* numberString)
-{
-  uint32_t integer = 0;
-  
-  for(uint8_t i = 0; i <strlen(numberString) -1; i+= 1)
-  {
-	// printf("\nDIGIT: %d", (numberString[i] - '0'));
-	// printf("\nPV: %d", placeValues[strlen(numberString) - i - 2]);
-    integer += (numberString[i] - '0') * placeValues[strlen(numberString) - i - 2];
-    // printf("\ninteger: %d", integer);
-  }
-  
-  return integer;
-	
-}
-
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
 uint8_t MemAllocValidate(char* params)
 {
+  char* sizeInWordsPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+
+  strcpy(paramCopy, params);
+  
+  sizeInWordsPtr = strtok(paramCopy, " ");
+  
+  if(sizeInWordsPtr == NULL)
+  {
+    return 0;
+  }
+  if(isValidNum(sizeInWordsPtr) == 0)
+  {
+	return 0;
+  }
   return 1;
 }
 
-uint8_t MemAllocExecute(char* params)
+void MemAllocExecute(char* params)
 {
-  uint16_t sizeInWords = convStringToNum(params + 1);
+  char* sizeInWordsPtr = strtok(params, " ");
+  uint16_t sizeInWords = convStringToNum(sizeInWordsPtr);
 
   memBlockPtr = malloc(sizeInWords * 4);
-  return 1;
+  memBlockSizeBytes = sizeInWords * 4;
+  if(memBlockPtr != NULL)
+  {
+    printf("Your new %d word block of memory starts at address: %p\n", sizeInWords, memBlockPtr);
+  }
+  else
+  {
+    printf("Sorry, a memory block of that size was not available, try a smaller size");    
+  }
 }

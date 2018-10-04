@@ -1,8 +1,8 @@
 /************************************************************************
  *
- * File: mem_display.h
+ * File: smart_mem_inv.h
  * Description: Header file that defines the interface to the implementation
- *              of the display memory command
+ *              of the invert memory block command.
  * 
  * Author: Sean Duffy
  * Tools: gcc
@@ -10,15 +10,9 @@
  * Links: NA
  *
 ***********************************************************************/
-#ifndef MEM_DISPLAY_H
-#define MEM_DISPLAY_H
+#ifndef SMEM_INV_H
+#define SMEM_INV_H
 
-#include "command_interface.h"
-
-extern COMMAND_INTERFACE_STRUCT MemDisplayCommandInterface;
-
-
-
-
+extern COMMAND_INTERFACE_STRUCT SmartMemInvCommandInterface;
 
 #endif

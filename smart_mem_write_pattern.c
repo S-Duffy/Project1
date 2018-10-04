@@ -1,8 +1,8 @@
 /************************************************************************
  *
- * File: mem_write_pattern.c
+ * File: smart_mem_write_pattern.c
  * Description: Implementation of command that writes pseudo-random numbers
- *              to a designated block of memory
+ *              to a designated allocated block of memory
  * 
  * Author: Sean Duffy
  * Tools: gcc
@@ -15,42 +15,40 @@
 #include "stdint.h"
 #include "stdio.h"
 #include "string.h"
+#include "mem_alloc.h"
 
 /**
- * Name: MemWritePatternValidate
- * Description: Verify the operands of the command
+ * Name: SmartMemWritePatternValidate
+ * Description: Verify the operands of the Smart write pattern to memory command
  * Argurments: char* params - character string of command operands
  * Return Value: uint8_t (boolean) 0: operands are invalid
  *                                 1: operands are valid
  */
-uint8_t MemWritePatternValidate(char* params);
+uint8_t SmartMemWritePatternValidate(char* params);
 
 /**
- * Name: MemWritePatternExecute
- * Description: Executes the write random pattern comman
+ * Name: SmartMemWritePatternExecute
+ * Description: Executes the smart write random pattern comman
  * Argurments: char* params - character string of the operand
  * Return Value: NA
  *
  */
-void MemWritePatternExecute(char* params);
+void SmartMemWritePatternExecute(char* params);
 
-extern uint32_t* memBlockPtr;
-extern uint32_t memBlockSizeBytes;
-
-COMMAND_INTERFACE_STRUCT MemWritePatternCommandInterface =
+COMMAND_INTERFACE_STRUCT SmartMemWritePatternCommandInterface =
 {
-  "MWPA",
-  "Write a pattern to a memory block designated by start address and size. Ex: 0x12345678 100",
-  MemWritePatternValidate,
-  MemWritePatternExecute,
+  "SWPA",
+  "Write a pattern to the allocated memory block by designating size, seed, and offset . Ex: SWPA 10 42 0",
+  SmartMemWritePatternValidate,
+  SmartMemWritePatternExecute,
 };
 
 
-uint8_t MemWritePatternValidate(char* params)
+uint8_t SmartMemWritePatternValidate(char* params)
 {
   char* seedStringPtr;
   char* sizeStringPtr;
-  char* startAddressStringPtr;
+  char* offsetStringPtr;
   char paramCopy[30];
   
   if(params == NULL)
@@ -78,9 +76,9 @@ uint8_t MemWritePatternValidate(char* params)
 	return 0;
   }  
   
-  startAddressStringPtr = strtok(NULL, " ");
+  offsetStringPtr = strtok(NULL, " ");
 
-  if(startAddressStringPtr == NULL)
+  if(offsetStringPtr == NULL)
   {
 	return 0;
   }
@@ -92,7 +90,7 @@ uint8_t MemWritePatternValidate(char* params)
     return 0;
   }
   
-  if(isValidNum(startAddressStringPtr) == 0)
+  if(isValidNum(offsetStringPtr) == 0)
   {
     return 0;
   }
@@ -101,11 +99,9 @@ uint8_t MemWritePatternValidate(char* params)
   {
     return 0;
   }
- 
-  if(((uint32_t*)convStringToNum(startAddressStringPtr) < memBlockPtr) ||
-     ((uint32_t*)convStringToNum(startAddressStringPtr) + convStringToNum(sizeStringPtr) > memBlockPtr + (memBlockSizeBytes/4)))
+
+  if((convStringToNum(sizeStringPtr) + convStringToNum(offsetStringPtr) > (memBlockSizeBytes/4)))
   {
-	printf("%p %d %p %d\n", (uint32_t*)convStringToNum(startAddressStringPtr), convStringToNum(sizeStringPtr), memBlockPtr,  (memBlockSizeBytes/4));
     printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
 	char* response;
 	char* unused = gets(response);
@@ -122,14 +118,14 @@ uint8_t MemWritePatternValidate(char* params)
   return 1;
 }
 
-void MemWritePatternExecute(char* params)
+void SmartMemWritePatternExecute(char* params)
 {
   char* sizeStringPtr;
   uint64_t size;
   char* seedStringPtr;
   uint64_t seed;
-  char* startAddressStringPtr;
-  uint32_t* startAddress;
+  char* offsetStringPtr;
+  uint32_t offset;
   
   if(params[0] == ' ')
   {
@@ -138,9 +134,9 @@ void MemWritePatternExecute(char* params)
 
   seedStringPtr = strtok(params, " ");
   sizeStringPtr = strtok(NULL, " ");
-  startAddressStringPtr  = strtok(NULL, " ");
+  offsetStringPtr  = strtok(NULL, " ");
 
-  startAddress = (uint32_t*) convStringToNum(startAddressStringPtr);
+  offset = convStringToNum(offsetStringPtr);
   size = convStringToNum(sizeStringPtr);
   seed = convStringToNum(seedStringPtr);
   
@@ -148,6 +144,6 @@ void MemWritePatternExecute(char* params)
   for(uint32_t i = 0; i < size; i += 1)
   {
     seed = seed * 37;
-    *(startAddress + i) = seed * ((uint64_t) &convStringToNum) ^ 0xAAAAAAAAAAAAAAAA;
+    *(memBlockPtr + offset + i) = seed * ((uint64_t) &convStringToNum) ^ 0xAAAAAAAAAAAAAAAA;
   }
 }

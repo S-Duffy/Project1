@@ -1,6 +1,6 @@
 /************************************************************************
  *
- * File: mem_ver_pattern.c
+ * File: smart_mem_ver_pattern.c
  * Description: Implementation of the command that verifies that the
  *              pseudo-random number sequence has been written to a 
  *              memory block.
@@ -16,42 +16,41 @@
 #include "stdint.h"
 #include "stdio.h"
 #include "string.h"
-#include "time.h"
+#include "sys/time.h"
+#include "mem_alloc.h"
 
 /**
- * Name: MemVerPatternValidate
+ * Name: SmartMemVerPatternValidate
  * Description: Verify the parameters for the Verify Pattern Command
  * Argurments: char* params - pointer to the string of the command operands
  * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
  *                                   1: operands are good, execute command
  */
-uint8_t MemVerPatternValidate(char* params);
+uint8_t SmartMemVerPatternValidate(char* params);
 
 /**
- * Name: MemVerPatternExecute
+ * Name: SmartMemVerPatternExecute
  * Description: Execute the verify pattern command
  * Argurments: char* params - pointer to character string of operands
  * Return Value: NA
  *
  */
-void MemVerPatternExecute(char* params);
+void SmartMemVerPatternExecute(char* params);
 
-extern uint32_t* memBlockPtr;
-extern uint32_t memBlockSizeBytes;
 
-COMMAND_INTERFACE_STRUCT MemVerPatternCommandInterface =
+COMMAND_INTERFACE_STRUCT SmartMemVerPatternCommandInterface =
 {
-  "MVPA",
-  "Verifies Pattern matches the memory space designated by address and size. Ex MVPA 0x12345678 100",
-  MemVerPatternValidate,
-  MemVerPatternExecute,
+  "SVPA",
+  "Verifies Pattern matches the memory space designated by offset and size. Ex SVPA 10 42 0",
+  SmartMemVerPatternValidate,
+  SmartMemVerPatternExecute,
 };
 
-uint8_t MemVerPatternValidate(char* params)
+uint8_t SmartMemVerPatternValidate(char* params)
 {
   char* seedStringPtr;
   char* sizeStringPtr;
-  char* startAddressStringPtr;
+  char* offsetStringPtr;
   char paramCopy[30];
   
   if(params == NULL)
@@ -80,9 +79,9 @@ uint8_t MemVerPatternValidate(char* params)
 	return 0;
   }  
 
-  startAddressStringPtr = strtok(NULL, " ");
+  offsetStringPtr = strtok(NULL, " ");
 
-  if(startAddressStringPtr == NULL)
+  if(offsetStringPtr == NULL)
   {
 	return 0;
   }
@@ -92,7 +91,7 @@ uint8_t MemVerPatternValidate(char* params)
     return 0;
   }
   
-  if(isValidNum(startAddressStringPtr) == 0)
+  if(isValidNum(offsetStringPtr) == 0)
   {
     return 0;
   }
@@ -102,8 +101,7 @@ uint8_t MemVerPatternValidate(char* params)
     return 0;
   }
  
-  if(((uint32_t*)convStringToNum(startAddressStringPtr) < memBlockPtr) ||
-     ((uint32_t*)convStringToNum(startAddressStringPtr) + convStringToNum(sizeStringPtr) >= memBlockPtr + memBlockSizeBytes))
+  if((convStringToNum(offsetStringPtr) + convStringToNum(offsetStringPtr) > (memBlockSizeBytes/4)))
   {
     printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
 	char* response;
@@ -117,33 +115,24 @@ uint8_t MemVerPatternValidate(char* params)
 	{
       return 0;
 	}
-  }
+  }	
+  
   return 1;
 }
 
-void MemVerPatternExecute(char* params)
+void SmartMemVerPatternExecute(char* params)
 {
-  clock_t startTime = clock();
-  struct timespec now;
-  clock_gettime(CLOCK_REALTIME, &now);
-  struct itimerspec plz;
-  timer_gettime(CLOCK_REALTIME, &plz);
-  time(&startTime);
-  
-  printf("%f\n", clock());
-  printf("%f\n", now);
-  printf("%f\n", startTime);
-  printf("%f\n", plz);
-  
+  struct timespec startTime;
+  clock_gettime(CLOCK_REALTIME, &startTime);
+ 
   char* sizeStringPtr;
   uint64_t size;
   char* seedStringPtr;
   uint64_t seed;
-  char* startAddressStringPtr;
-  uint32_t* startAddress;
+  char* offsetStringPtr;
+  uint64_t offset;
   uint8_t patternsMatch = 1;
   
-   
   if(params[0] == ' ')
   {
 	params+=1;
@@ -151,9 +140,9 @@ void MemVerPatternExecute(char* params)
 
   seedStringPtr = strtok(params, " ");
   sizeStringPtr = strtok(NULL, " ");
-  startAddressStringPtr  = strtok(NULL, " ");
+  offsetStringPtr  = strtok(NULL, " ");
 
-  startAddress = (uint32_t*) convStringToNum(startAddressStringPtr);
+  offset = convStringToNum(offsetStringPtr);
   size = convStringToNum(sizeStringPtr);
   seed = convStringToNum(seedStringPtr);
 		
@@ -161,25 +150,18 @@ void MemVerPatternExecute(char* params)
   {
     seed = seed * 37;
     uint32_t randNum = seed * ((uint64_t) &convStringToNum) ^ 0xAAAAAAAA;
-    if(*(startAddress + i) != randNum)
+    if(*(memBlockPtr + offset + i) != randNum)
     {
 	  patternsMatch = 0;
-      printf("Mismatch at %p. Expected: %p. Found: %p\n", startAddress + i, randNum, *(startAddress + i));
+      printf("Mismatch at offset %d. Expected: %d. Found: %d\n", i, randNum, *(memBlockPtr + offset + i));
     }
   }
   
   if(patternsMatch == 1)
   {
-	clock_t endTime;
-	time(&endTime);
-    struct timespec then;
-    clock_gettime(CLOCK_REALTIME, &then);
-    clock_t then2 = clock();
-	printf("then: %f\n", then);
-	printf("now: %f\n", now);
-	printf("then2: %f\n", then);
-	printf("now: %f\n", now);	
-    printf("Time taken to verify pattern: %f seconds\n", difftime(endTime,startTime));
+	printf("Pattern Match Successful\n");
+    struct timespec endTime;
+    clock_gettime(CLOCK_REALTIME, &endTime);
+    printf("Time taken to verify pattern: %.2f nano seconds\n", (double)(endTime.tv_nsec - startTime.tv_nsec));
   }	  
 }
-

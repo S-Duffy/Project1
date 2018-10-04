@@ -14,39 +14,38 @@
 #include "stdint.h"
 #include "stdio.h"
 #include "string.h"
+#include "mem_alloc.h"
 
 /**
- * Name: MemWriteValidate
- * Description: Verify the parameters for the Write Pattern Command
+ * Name: SmartWriteValidate
+ * Description: Verify the parameters for the Smart Write to Memory Command
  * Argurments: char* params - pointer to the string of the command operands
  * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
  *                                   1: operands are good, execute command
  */
-uint8_t MemWriteValidate(char* params);
+uint8_t SmartWriteValidate(char* params);
 
 /**
- * Name: MemWriteExecute
- * Description: Execute the write to memory command
+ * Name: SmartWriteExecute
+ * Description: Execute the smart write to memory command
  * Argurments: char* params - pointer to character string of operands
  * Return Value: NA
  *
  */
-void MemWriteExecute(char* params);
+void SmartWriteExecute(char* params);
 
-COMMAND_INTERFACE_STRUCT MemWriteCommandInterface =
+COMMAND_INTERFACE_STRUCT SmartWriteCommandInterface =
 {
-  "MWRT",
-  "Write a 4 byte value to a memory address. Ex: MWRT 0x12345678 42",
-  MemWriteValidate,
-  MemWriteExecute,
+  "SWRT",
+  "Write a 4 byte value to a memory offset from the base of the allocated block. Ex: SWRT 42 1",
+  SmartWriteValidate,
+  SmartWriteExecute,
 };
 
-extern uint32_t* memBlockPtr;
-extern uint32_t memBlockSizeBytes;
-uint8_t MemWriteValidate(char* params)
+uint8_t SmartWriteValidate(char* params)
 {
   char* valueStringPtr;
-  char* startAddressStringPtr;
+  char* addressOffsetStringPtr;
   char paramCopy[30];
   uint8_t hex;
   
@@ -69,9 +68,9 @@ uint8_t MemWriteValidate(char* params)
     return 0;
   }
 
-  startAddressStringPtr = strtok(NULL, " ");
+  addressOffsetStringPtr = strtok(NULL, " ");
 
-  if(startAddressStringPtr == NULL)
+  if(addressOffsetStringPtr == NULL)
   {
 	return 0;
   }
@@ -81,15 +80,15 @@ uint8_t MemWriteValidate(char* params)
     return 0;
   }
   
-  if(isValidNum(startAddressStringPtr) == 0)
+  if(isValidNum(addressOffsetStringPtr) == 0)
   {
     return 0;
   }
   
-  if(((uint32_t*)convStringToNum(startAddressStringPtr) < memBlockPtr) ||
-     ((uint32_t*)convStringToNum(startAddressStringPtr) >= memBlockPtr + memBlockSizeBytes))
+  if(((uint64_t)convStringToNum(addressOffsetStringPtr) < 0) ||
+     ((uint64_t)convStringToNum(addressOffsetStringPtr) >= (memBlockSizeBytes/4)))
   {
-    printf("%p has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n", convStringToNum(startAddressStringPtr));
+    printf("This address has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
 	char* response;
 	char* unused = gets(response);
 	printf(response); // echo
@@ -106,10 +105,10 @@ uint8_t MemWriteValidate(char* params)
   return 1;
 }
 
-void MemWriteExecute(char* params)
+void SmartWriteExecute(char* params)
 {
   char* valueStringPtr;
-  char* startAddressStringPtr;
+  char* offsetStringPtr;
   
   if(params[0] == ' ')
   {
@@ -117,8 +116,8 @@ void MemWriteExecute(char* params)
   }
 
   valueStringPtr = strtok(params, " ");
-  startAddressStringPtr = strtok(NULL, " ");  
+  offsetStringPtr = strtok(NULL, " ");  
 
-  printf("Writing %d to %p\n", convStringToNum(valueStringPtr), (uint32_t*)convStringToNum(startAddressStringPtr));
-  *((uint32_t*)convStringToNum(startAddressStringPtr)) = convStringToNum(valueStringPtr);
+  printf("Writing %d to %p + %d\n", convStringToNum(valueStringPtr), memBlockPtr, (uint32_t*)convStringToNum(offsetStringPtr));
+  *(memBlockPtr + (uint64_t)convStringToNum(offsetStringPtr)) = convStringToNum(valueStringPtr);
 }

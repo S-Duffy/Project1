@@ -1,0 +1,2188 @@
+/************************************************************************
+ *
+ * File: command_interface.c
+ * Description: Header for command interface organization and helper
+ *              functions to interpret commands.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+
+#include "stdint.h"
+#include "string.h"
+#include "stdio.h"
+
+uint64_t decPlaceValues[] = {
+	1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 10000000000, 100000000000, 1000000000000
+};
+
+uint64_t hexPlaceValues[] = {
+	1, 16, 256, 4096, 65536, 1048576, 16777216, 268435456, 4294967296, 68719476736, 1099511627776, 17592186044416, 281474976710656, 4503599627370496, 72057594037927936
+};
+
+uint64_t* placeValues;
+
+uint64_t convStringToNum(char* numberString)
+{
+  uint64_t integer = 0;
+  
+  if(numberString[0] == '0')
+  {
+	if(numberString[1] == 'x')
+	{
+      placeValues = hexPlaceValues;
+	  numberString += 2;
+	}
+	else
+	{
+      placeValues = decPlaceValues;
+	}
+  }
+  else
+  {
+    placeValues = decPlaceValues;
+  }
+	
+  for(uint8_t i = 0; i <strlen(numberString) ; i+= 1)
+  {
+    integer += (numberString[i] - '0') * placeValues[strlen(numberString) - i - 1];
+	// printf("i: %d, integer: %d\n", i , integer);
+	fflush(stdout);
+  }
+
+  return integer;
+}
+
+uint8_t isValidNum(char* inputString)
+{
+  uint8_t isHex = 0;
+  
+  for(uint8_t i = 0; i <strlen(inputString); i += 1)
+  {
+	if((i == 0) && inputString[i] == '0')
+	{
+      isHex += 1;
+	}
+	else if((i == 1) && inputString[i] == 'x')
+	{
+      isHex += 1;
+	  if(strlen(inputString) <= 2)
+	  {
+        return 0;
+	  }
+	}
+	else if((isHex != 2) && ((inputString[i] > '9') || (inputString[i] < '0')) ||
+	        ((isHex == 2) && ((inputString[i] > '9') || (inputString[i] < '0') &&
+			                ((inputString[i] > 'f') || (inputString[i] < 'a')))))
+	  return 0;
+  }
+  return 1;
+  
+}
+/************************************************************************
+ *
+ * File: command_interface.h
+ * Description: Header for command interface organization and helper
+ *              functions to interpret commands.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef COMMAND_INTERFACE_H
+#define COMMAND_INTERFACE_H
+
+#include "stdint.h"
+
+typedef uint8_t (*commandValidationFunc)(char* params);
+typedef void (*commandExecuteFunc)(char* params);
+
+
+typedef struct {
+  const char* commandString;
+  const char* commandHelpString;
+  commandValidationFunc validate;
+  commandExecuteFunc execute;
+} COMMAND_INTERFACE_STRUCT;
+
+/**
+ * Name: convStringToNum
+ * Description: 
+ * Argurments: char* numberString - ASCII string of a decimal or hexadecimal number
+ * Return Value: integer (in 2's complement) that corresponds to given string
+ *
+ */
+uint64_t convStringToNum(char* numberString);
+
+/**
+ * Name: isValidNum
+ * Description: Determines if input string represents a valid decimal or hexadecimal number
+ * Argurments: char* inputString - ASCII string
+ * Return Value: uint8_t (boolean) 0: string is not a valid decimal or hexadecimal number
+ *                                 1: string is a valid decimal or hexadecimal number
+ */
+uint8_t isValidNum(char* inputString);
+
+#endif
+
+/************************************************************************
+ *
+ * File: help.c
+ * Description: Implementation of the help command
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "string.h"
+#include "command_interface.h"
+#include "stdio.h"
+#include "stdint.h"
+
+#include "mem_alloc.h"
+#include "mem_free.h"
+#include "mem_display.h"
+#include "mem_write.h"
+#include "mem_inv.h"
+#include "mem_write_pattern.h"
+#include "mem_ver_pattern.h"
+#include "smart_mem_display.h"
+#include "smart_mem_write.h"
+#include "smart_mem_inv.h"
+#include "smart_mem_write_pattern.h"
+#include "smart_mem_ver_pattern.h"
+
+/**
+ * Name: HelpValidate
+ * Description: Verify the parameters for the help Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t HelpValidate(char* params);
+
+/**
+ * Name: HelpExecute
+ * Description: Execute the help command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void HelpExecute(char* params);
+
+COMMAND_INTERFACE_STRUCT HelpCommandInterface =
+{
+	"HELP",
+	"You're doing it right",
+	HelpValidate,
+	HelpExecute,
+};
+
+COMMAND_INTERFACE_STRUCT* commandInterfacesForHelp[] =
+{
+  &HelpCommandInterface,
+  &MemAllocCommandInterface,
+  &MemDisplayCommandInterface,
+  &MemFreeCommandInterface,
+  &MemInvCommandInterface,
+  &MemVerPatternCommandInterface,
+  &MemWriteCommandInterface,
+  &MemWritePatternCommandInterface,
+  &SmartWriteCommandInterface,
+  &SmartMemWritePatternCommandInterface,  
+  &SmartMemInvCommandInterface,
+  &SmartMemVerPatternCommandInterface,  
+  &SmartMemDisplayCommandInterface,  
+  NULL,
+};
+
+uint8_t HelpValidate(char* params)
+{	
+  return 1;
+}
+
+void HelpExecute(char* params)
+{
+  uint8_t i = 0;
+
+  printf("Supported Commands are:\n");
+  // loop through supported command
+  while(commandInterfacesForHelp[i] != NULL)
+  {
+    if(commandInterfacesForHelp[i] -> commandHelpString != NULL)
+    {
+      printf("%s: %s\n", commandInterfacesForHelp[i] -> commandString, commandInterfacesForHelp[i] -> commandHelpString);
+    }
+    i += 1;
+  }
+}
+/************************************************************************
+ *
+ * File: help.h
+ * Description: Header file that defines the interface to the help
+ *              command implementation.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#ifndef HELP_H
+#define HELP_H
+
+#include "command_interface.h"
+
+extern COMMAND_INTERFACE_STRUCT HelpCommandInterface;
+
+#endif
+
+
+
+
+
+/************************************************************************
+ *
+ * File: main.c
+ * Description: Main file for the Project 1 project. Primarily relays
+ *              messages between the user (usu. stdio) and the files that
+ *             implement the supported commands.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "stdio.h"
+#include "string.h"
+#include "stdint.h"
+
+#include "command_interface.h"
+#include "help.h"
+#include "mem_alloc.h"
+#include "mem_free.h"
+#include "mem_display.h"
+#include "mem_write.h"
+#include "mem_inv.h"
+#include "mem_write_pattern.h"
+#include "mem_ver_pattern.h"
+#include "smart_mem_write.h"
+#include "smart_mem_display.h"
+#include "smart_mem_inv.h"
+#include "smart_mem_write_pattern.h"
+#include "smart_mem_ver_pattern.h"
+
+char currentCommandString[70];
+char* currentCommandStringPtr;
+char currentOpcodeString[50];
+char currentOperands[50];
+char* currentOperandsPtr;
+
+COMMAND_INTERFACE_STRUCT* commandInterfaces[] =
+{
+  &HelpCommandInterface,
+  &MemAllocCommandInterface,
+  &MemDisplayCommandInterface,
+  &MemFreeCommandInterface,
+  &MemInvCommandInterface,
+  &MemVerPatternCommandInterface,
+  &MemWriteCommandInterface,
+  &MemWritePatternCommandInterface,
+  &SmartWriteCommandInterface,
+  &SmartMemWritePatternCommandInterface,  
+  &SmartMemInvCommandInterface,
+  &SmartMemVerPatternCommandInterface,  
+  &SmartMemDisplayCommandInterface,  
+  NULL,
+};
+
+int main(void)
+{
+  // Display greeting message with help function explanation
+  printf("Entering Hardware Evaluation Mode.\n");
+  printf("Type 'HELP' for command descriptions.\n");
+  printf("Type 'QUIT' to exit Hardware Evaluation Mode.\n");
+  while(1)
+  {
+    // Retrieve Input
+    char* unused = gets(currentCommandString);
+
+	// Echo Input
+	printf("%s\n", currentCommandString);
+	
+    if(strcmp(currentCommandString, "QUIT") == 0)
+    {
+      break;
+    }
+    // Identify Callback
+	if(strstr(currentCommandString, " ") == 0)
+	{ // No spaces, so all opcode
+      // printf("No spaces\n");
+	  strcpy((char*)&currentOpcodeString, (char*)&currentCommandString);
+	  currentOperandsPtr = NULL;
+	}
+	else
+	{
+	  strncpy((char*)&currentOpcodeString, (char*)&currentCommandString, (strchr(currentCommandString, ' ') - currentCommandString));
+	  strcpy((char*)&currentOperands, (char*)&currentCommandString +(strchr(currentCommandString, ' ') - currentCommandString));
+      currentOperandsPtr = &currentOperands[0];
+	  // printf("currentOpcodeString: %s\n", currentOpcodeString);
+	  // printf("currentOperands: %s\n", currentOperands);
+	}
+
+	uint8_t i = 0;
+	while((commandInterfaces[i] != NULL) && 
+	       (strcmp(currentOpcodeString, commandInterfaces[i]->commandString) != 0))
+	{
+	  i += 1;
+	}
+	if(commandInterfaces[i] == NULL)
+	{
+	  printf("Invalid Command: '%s'\n", currentCommandString);
+	}
+    // Verify Parameters
+	else
+	{
+	  if(commandInterfaces[i]->validate(currentOperandsPtr))
+	  {
+		// printf("currentOperands: %s\n", currentOperands);
+		commandInterfaces[i]->execute(currentOperands);
+	  }
+	  else
+	  {
+		printf("Invalid Operands: %s.\n", currentOperandsPtr);
+	  }
+		  
+	}
+    // Perform Operation
+  }
+
+  printf("Exiting Hardware Evaluation Mode.\n");
+
+  return 0;
+
+}
+/************************************************************************
+ *
+ * File: mem_alloc.c
+ * Description: Implementation of the allocate memory command
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+
+
+#include "command_interface.h"
+#include "stdint.h"
+#include <stdlib.h>
+#include "stdio.h"
+#include "string.h"
+
+/**
+ * Name: MemAllocValidate
+ * Description: Verify the parameters for the allocate memory Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t MemAllocValidate(char* params);
+
+/**
+ * Name: MemAllocExecute
+ * Description: Execute the allocat memory command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void MemAllocExecute(char* params);
+
+uint32_t* memBlockPtr = NULL;
+uint32_t memBlockSizeBytes = 0;
+
+COMMAND_INTERFACE_STRUCT MemAllocCommandInterface =
+{
+  "MALL",
+  "Allocates a block of memory. Takes 1 argument to determine size. Ex: MALL 100",
+  MemAllocValidate,
+  MemAllocExecute,
+};
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+uint8_t MemAllocValidate(char* params)
+{
+  char* sizeInWordsPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+
+  strcpy(paramCopy, params);
+  
+  sizeInWordsPtr = strtok(paramCopy, " ");
+  
+  if(sizeInWordsPtr == NULL)
+  {
+    return 0;
+  }
+  if(isValidNum(sizeInWordsPtr) == 0)
+  {
+	return 0;
+  }
+  return 1;
+}
+
+void MemAllocExecute(char* params)
+{
+  char* sizeInWordsPtr = strtok(params, " ");
+  uint16_t sizeInWords = convStringToNum(sizeInWordsPtr);
+
+  memBlockPtr = malloc(sizeInWords * 4);
+  memBlockSizeBytes = sizeInWords * 4;
+  if(memBlockPtr != NULL)
+  {
+    printf("Your new %d word block of memory starts at address: %p\n", sizeInWords, memBlockPtr);
+  }
+  else
+  {
+    printf("Sorry, a memory block of that size was not available, try a smaller size");    
+  }
+}/************************************************************************
+ *
+ * File: mem_alloc.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the allocate memory block command and the information
+ *              describing the allocated memory block
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef MEM_ALLOC_H
+#define MEM_ALLOC_H
+
+
+extern COMMAND_INTERFACE_STRUCT MemAllocCommandInterface;
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+
+#endif
+/************************************************************************
+ *
+ * File: mem_display.c
+ * Description: Implementation of command that prints blocks of memory via stdio
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "string.h"
+#include "stdio.h"
+
+/**
+ * Name: MemDisplayValidate
+ * Description: Validates the operands of the display memory command
+ * Argurments: char* params - character string of operands
+ * Return Value: uint8_t (boolean) 0: operands are invalid
+ *                                 1: operands are valid
+ */
+uint8_t MemDisplayValidate(char* params);
+
+/**
+ * Name: MemFreeExecute
+ * Description: Executes the display memory command
+ * Argurments: char* params - character string of the operands
+ * Return Value: NA
+ *
+ */
+void MemDisplayExecute(char* params);
+
+COMMAND_INTERFACE_STRUCT MemDisplayCommandInterface =
+{
+  "MDIS",
+  "Displays a block of memory. Takes 2 arguments: Starting Address and Size (in 4 byte words). Ex: MDIS 100 0x12345678",
+  MemDisplayValidate,
+  MemDisplayExecute,
+};
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+uint8_t MemDisplayValidate(char* params)
+{
+  char* sizeStringPtr;
+  char* validateStartAddressStringPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  // printf("paramCopy: %s\n", paramCopy);
+  
+  sizeStringPtr = strtok(paramCopy, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  validateStartAddressStringPtr = strtok(NULL, " ");
+
+  if(validateStartAddressStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(validateStartAddressStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(((uint32_t*)convStringToNum(validateStartAddressStringPtr) < memBlockPtr) ||
+     ((uint32_t*)convStringToNum(validateStartAddressStringPtr) >= memBlockPtr + (memBlockSizeBytes/4)))
+  {
+    printf("%p has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n", convStringToNum(validateStartAddressStringPtr));
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }	
+
+  return 1;
+}
+
+void MemDisplayExecute(char* params)
+{
+  char* sizeStringPtr;
+  char* startAddressStringPtr;
+
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+  // printf("params: %s\n", params);
+  sizeStringPtr = strtok(params, " ");
+  startAddressStringPtr = strtok(NULL, " ");
+  
+  uint32_t* startingAddress = (uint32_t*) convStringToNum(startAddressStringPtr);
+  
+  uint64_t size = convStringToNum(sizeStringPtr);
+  printf("Reading %d words starting at address %p\n", size, startingAddress);
+    
+  for(uint32_t i = 0; i < size; i += 1)
+  {
+    printf("%p : %d\n", startingAddress + i, *(startingAddress + i));
+  }
+}/************************************************************************
+ *
+ * File: mem_display.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the display memory command
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef MEM_DISPLAY_H
+#define MEM_DISPLAY_H
+
+#include "command_interface.h"
+
+extern COMMAND_INTERFACE_STRUCT MemDisplayCommandInterface;
+
+
+
+
+
+#endif
+/************************************************************************
+ *
+ * File: mem_free.c
+ * Description: Implementation of the command that de-allocates a memory block
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#include "command_interface.h"
+#include "mem_alloc.h"
+#include "stdint.h"
+#include <stdlib.h>
+
+/**
+ * Name: MemFreeValidate
+ * Description: Validates the operands of the free memory command
+ * Argurments: char* params - character string of operand
+ * Return Value: uint8_t (boolean) 0: operands are invalid
+ *                                 1: operands are valid
+ */
+uint8_t MemFreeValidate(char* params);
+
+/**
+ * Name: MemFreeExecute
+ * Description: Executes the free memory command
+ * Argurments: char* params - character string of the operand
+ * Return Value: NA
+ *
+ */
+void MemFreeExecute(char* params);
+
+COMMAND_INTERFACE_STRUCT MemFreeCommandInterface =
+{
+  "MFRE",
+  "Frees the block of memory allocated by MALL. Takes no arguments Ex: MFRE",
+  MemFreeValidate,
+  MemFreeExecute,
+};
+
+
+uint8_t MemFreeValidate(char* params)
+{
+
+  if(params == NULL)
+  {
+    return 1;
+  }
+  
+  return 0;
+}
+
+void MemFreeExecute(char* params)
+{
+  free(memBlockPtr);
+}/************************************************************************
+ *
+ * File: mem_free.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the free memory command.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef MEM_FREE_H
+#define MEM_FREE_H
+
+extern COMMAND_INTERFACE_STRUCT MemFreeCommandInterface;
+
+
+#endif
+/************************************************************************
+ *
+ * File: mem_inv.c
+ * Description: Implementation of the command that inverts the values in
+ *              a specified block of memory
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "string.h"
+#include "stdio.h"
+
+/**
+ * Name: MemInvValidate
+ * Description: Verify the parameters for the invert memory Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t MemInvValidate(char* params);
+
+/**
+ * Name: MemInvExecute
+ * Description: Execute the invert memory command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void MemInvExecute(char* params);
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+
+COMMAND_INTERFACE_STRUCT MemInvCommandInterface =
+{
+  "MINV",
+  "Inverts the values in the block of memory allocated by MALL. Takes 2 arguments: \
+  size and start address. Ex: MINV 10 0x12345678",
+  MemInvValidate,
+  MemInvExecute,
+};
+
+
+uint8_t MemInvValidate(char* params)
+{  
+  char* sizeStringPtr;
+  char* startAddressStringPtr;
+  char* test;
+  uint8_t hex;
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  sizeStringPtr = strtok(params, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  startAddressStringPtr = strtok(NULL, " ");
+
+  if(startAddressStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(startAddressStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(((uint32_t*)convStringToNum(startAddressStringPtr) < memBlockPtr) ||
+     ((uint32_t*)convStringToNum(startAddressStringPtr) >= memBlockPtr + memBlockSizeBytes))
+  {
+    printf("%p has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n", startAddressStringPtr);
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }	
+
+  return 1;
+}
+
+void MemInvExecute(char* params)
+{
+  char* sizeStringPtr;
+  char* startAddressStringPtr;
+  
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+
+  sizeStringPtr = strtok(params, " ");
+  startAddressStringPtr = strtok(NULL, " ");
+  uint32_t* startingAddress = (uint32_t*) convStringToNum(startAddressStringPtr);
+  uint64_t size = convStringToNum(sizeStringPtr);
+  printf("Reading %d words starting at address %p\n", size, startingAddress);
+  
+  
+  for(uint32_t i = 0; i < size; i += 1)
+  {
+    printf("%p : %d\n", startingAddress + i, *(startingAddress + i));
+	*(startingAddress + i) = *(startingAddress + i) ^ 0xFFFFFFFFFFFFFFFF;  // instructions explicitly state "Use XOR"
+  }
+}/************************************************************************
+ *
+ * File: mem_inv.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the invert memory block command.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef MEM_INV_H
+#define MEM_INV_H
+
+
+extern COMMAND_INTERFACE_STRUCT MemInvCommandInterface;
+
+
+#endif
+/************************************************************************
+ *
+ * File: mem_ver_pattern.c
+ * Description: Implementation of the command that verifies that the
+ *              pseudo-random number sequence has been written to a 
+ *              memory block.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "string.h"
+#include "time.h"
+
+/**
+ * Name: MemVerPatternValidate
+ * Description: Verify the parameters for the Verify Pattern Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t MemVerPatternValidate(char* params);
+
+/**
+ * Name: MemVerPatternExecute
+ * Description: Execute the verify pattern command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void MemVerPatternExecute(char* params);
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+
+COMMAND_INTERFACE_STRUCT MemVerPatternCommandInterface =
+{
+  "MVPA",
+  "Verifies Pattern matches the memory space designated by address and size. Ex MVPA 0x12345678 100",
+  MemVerPatternValidate,
+  MemVerPatternExecute,
+};
+
+uint8_t MemVerPatternValidate(char* params)
+{
+  char* seedStringPtr;
+  char* sizeStringPtr;
+  char* startAddressStringPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  
+  seedStringPtr = strtok(paramCopy, " ");
+  
+  if(seedStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  
+  sizeStringPtr = strtok(NULL, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+	return 0;
+  }  
+
+  startAddressStringPtr = strtok(NULL, " ");
+
+  if(startAddressStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(seedStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(startAddressStringPtr) == 0)
+  {
+    return 0;
+  }
+ 
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+ 
+  if(((uint32_t*)convStringToNum(startAddressStringPtr) < memBlockPtr) ||
+     ((uint32_t*)convStringToNum(startAddressStringPtr) + convStringToNum(sizeStringPtr) >= memBlockPtr + memBlockSizeBytes))
+  {
+    printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }
+  return 1;
+}
+
+void MemVerPatternExecute(char* params)
+{
+  clock_t startTime = clock();
+  struct timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
+  struct itimerspec plz;
+  timer_gettime(CLOCK_REALTIME, &plz);
+  time(&startTime);
+  
+  printf("%f\n", clock());
+  printf("%f\n", now);
+  printf("%f\n", startTime);
+  printf("%f\n", plz);
+  
+  char* sizeStringPtr;
+  uint64_t size;
+  char* seedStringPtr;
+  uint64_t seed;
+  char* startAddressStringPtr;
+  uint32_t* startAddress;
+  uint8_t patternsMatch = 1;
+  
+   
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+
+  seedStringPtr = strtok(params, " ");
+  sizeStringPtr = strtok(NULL, " ");
+  startAddressStringPtr  = strtok(NULL, " ");
+
+  startAddress = (uint32_t*) convStringToNum(startAddressStringPtr);
+  size = convStringToNum(sizeStringPtr);
+  seed = convStringToNum(seedStringPtr);
+		
+  for(uint32_t i = 0; i < size; i += 1)
+  {
+    seed = seed * 37;
+    uint32_t randNum = seed * ((uint64_t) &convStringToNum) ^ 0xAAAAAAAA;
+    if(*(startAddress + i) != randNum)
+    {
+	  patternsMatch = 0;
+      printf("Mismatch at %p. Expected: %p. Found: %p\n", startAddress + i, randNum, *(startAddress + i));
+    }
+  }
+  
+  if(patternsMatch == 1)
+  {
+	clock_t endTime;
+	time(&endTime);
+    struct timespec then;
+    clock_gettime(CLOCK_REALTIME, &then);
+    clock_t then2 = clock();
+	printf("then: %f\n", then);
+	printf("now: %f\n", now);
+	printf("then2: %f\n", then);
+	printf("now: %f\n", now);	
+    printf("Time taken to verify pattern: %f seconds\n", difftime(endTime,startTime));
+  }	  
+}
+
+/************************************************************************
+ *
+ * File: mem_ver_pattern.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the verify pseudo-random number patter in memory.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef MEM_VER_PATTERN_H
+#define MEM_VER_PATTERN_H
+
+#include "command_interface.h"
+
+extern COMMAND_INTERFACE_STRUCT MemVerPatternCommandInterface;
+
+
+#endif 
+/************************************************************************
+ *
+ * File: 
+ * Description:
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "string.h"
+
+/**
+ * Name: MemWriteValidate
+ * Description: Verify the parameters for the Write Pattern Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t MemWriteValidate(char* params);
+
+/**
+ * Name: MemWriteExecute
+ * Description: Execute the write to memory command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void MemWriteExecute(char* params);
+
+COMMAND_INTERFACE_STRUCT MemWriteCommandInterface =
+{
+  "MWRT",
+  "Write a 4 byte value to a memory address. Ex: MWRT 0x12345678 42",
+  MemWriteValidate,
+  MemWriteExecute,
+};
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+uint8_t MemWriteValidate(char* params)
+{
+  char* valueStringPtr;
+  char* startAddressStringPtr;
+  char paramCopy[30];
+  uint8_t hex;
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  // printf("paramCopy: %s\n", paramCopy);
+  
+  valueStringPtr = strtok(paramCopy, " ");
+  
+  if(valueStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  startAddressStringPtr = strtok(NULL, " ");
+
+  if(startAddressStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(valueStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(startAddressStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(((uint32_t*)convStringToNum(startAddressStringPtr) < memBlockPtr) ||
+     ((uint32_t*)convStringToNum(startAddressStringPtr) >= memBlockPtr + memBlockSizeBytes))
+  {
+    printf("%p has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n", convStringToNum(startAddressStringPtr));
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }
+  
+  return 1;
+}
+
+void MemWriteExecute(char* params)
+{
+  char* valueStringPtr;
+  char* startAddressStringPtr;
+  
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+
+  valueStringPtr = strtok(params, " ");
+  startAddressStringPtr = strtok(NULL, " ");  
+
+  printf("Writing %d to %p\n", convStringToNum(valueStringPtr), (uint32_t*)convStringToNum(startAddressStringPtr));
+  *((uint32_t*)convStringToNum(startAddressStringPtr)) = convStringToNum(valueStringPtr);
+}
+/************************************************************************
+ *
+ * File: mem_write.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the memory write command.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef MEM_WRITE_H
+#define MEM_WRITE_H
+
+extern COMMAND_INTERFACE_STRUCT MemWriteCommandInterface;
+
+
+
+#endif
+/************************************************************************
+ *
+ * File: mem_write_pattern.c
+ * Description: Implementation of command that writes pseudo-random numbers
+ *              to a designated block of memory
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "string.h"
+
+/**
+ * Name: MemWritePatternValidate
+ * Description: Verify the operands of the command
+ * Argurments: char* params - character string of command operands
+ * Return Value: uint8_t (boolean) 0: operands are invalid
+ *                                 1: operands are valid
+ */
+uint8_t MemWritePatternValidate(char* params);
+
+/**
+ * Name: MemWritePatternExecute
+ * Description: Executes the write random pattern comman
+ * Argurments: char* params - character string of the operand
+ * Return Value: NA
+ *
+ */
+void MemWritePatternExecute(char* params);
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+
+COMMAND_INTERFACE_STRUCT MemWritePatternCommandInterface =
+{
+  "MWPA",
+  "Write a pattern to a memory block designated by start address and size. Ex: 0x12345678 100",
+  MemWritePatternValidate,
+  MemWritePatternExecute,
+};
+
+
+uint8_t MemWritePatternValidate(char* params)
+{
+  char* seedStringPtr;
+  char* sizeStringPtr;
+  char* startAddressStringPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  
+  seedStringPtr = strtok(paramCopy, " ");
+  
+  if(seedStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  sizeStringPtr = strtok(NULL, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+	return 0;
+  }  
+  
+  startAddressStringPtr = strtok(NULL, " ");
+
+  if(startAddressStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+
+  
+  if(isValidNum(seedStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(startAddressStringPtr) == 0)
+  {
+    return 0;
+  }
+ 
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+ 
+  if(((uint32_t*)convStringToNum(startAddressStringPtr) < memBlockPtr) ||
+     ((uint32_t*)convStringToNum(startAddressStringPtr) + convStringToNum(sizeStringPtr) > memBlockPtr + (memBlockSizeBytes/4)))
+  {
+	printf("%p %d %p %d\n", (uint32_t*)convStringToNum(startAddressStringPtr), convStringToNum(sizeStringPtr), memBlockPtr,  (memBlockSizeBytes/4));
+    printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }
+  return 1;
+}
+
+void MemWritePatternExecute(char* params)
+{
+  char* sizeStringPtr;
+  uint64_t size;
+  char* seedStringPtr;
+  uint64_t seed;
+  char* startAddressStringPtr;
+  uint32_t* startAddress;
+  
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+
+  seedStringPtr = strtok(params, " ");
+  sizeStringPtr = strtok(NULL, " ");
+  startAddressStringPtr  = strtok(NULL, " ");
+
+  startAddress = (uint32_t*) convStringToNum(startAddressStringPtr);
+  size = convStringToNum(sizeStringPtr);
+  seed = convStringToNum(seedStringPtr);
+  
+   
+  for(uint32_t i = 0; i < size; i += 1)
+  {
+    seed = seed * 37;
+    *(startAddress + i) = seed * ((uint64_t) &convStringToNum) ^ 0xAAAAAAAAAAAAAAAA;
+  }
+}/************************************************************************
+ *
+ * File: mem_write_pattern.h
+ * Description: Header file that defines the interface to the interface 
+ *              write pseudo-random number sequence into memory command.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef MEM_WRITE_PATTERN_H
+#define MEM_WRITE_PATTERN_H
+
+extern COMMAND_INTERFACE_STRUCT MemWritePatternCommandInterface;
+
+#endif
+/************************************************************************
+ *
+ * File: smart_mem_display.c
+ * Description: Implementation of command that prints blocks of memory via stdio
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "string.h"
+#include "stdio.h"
+#include "mem_alloc.h"
+
+/**
+ * Name: SmartMemDisplayValidate
+ * Description: Validates the operands of the smart display memory command
+ * Argurments: char* params - character string of operands
+ * Return Value: uint8_t (boolean) 0: operands are invalid
+ *                                 1: operands are valid
+ */
+uint8_t SmartMemDisplayValidate(char* params);
+
+/**
+ * Name: SmartMemDisplayExecute
+ * Description: Executes the display memory command
+ * Argurments: char* params - character string of the operands
+ * Return Value: NA
+ *
+ */
+void SmartMemDisplayExecute(char* params);
+
+COMMAND_INTERFACE_STRUCT SmartMemDisplayCommandInterface =
+{
+  "SDIS",
+  "Displays a block of memory. Takes 2 arguments: Starting offset and Size (in 4 byte words). Ex: SDIS 100 0",
+  SmartMemDisplayValidate,
+  SmartMemDisplayExecute,
+};
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+uint8_t SmartMemDisplayValidate(char* params)
+{
+  char* sizeStringPtr;
+  char* offsetStringPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  // printf("paramCopy: %s\n", paramCopy);
+  
+  sizeStringPtr = strtok(paramCopy, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  offsetStringPtr = strtok(NULL, " ");
+
+  if(offsetStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(offsetStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if((convStringToNum(offsetStringPtr) +convStringToNum(offsetStringPtr) > (memBlockSizeBytes/4)))
+  {
+    printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }	
+
+  return 1;
+}
+
+void SmartMemDisplayExecute(char* params)
+{
+  char* sizeStringPtr;
+  char* offsetStringPtr;
+
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+  // printf("params: %s\n", params);
+  sizeStringPtr = strtok(params, " ");
+  offsetStringPtr = strtok(NULL, " ");
+  
+  uint64_t offset = convStringToNum(offsetStringPtr);
+  
+  uint64_t size = convStringToNum(sizeStringPtr);
+  printf("Reading %d words starting at offset %d from start of allocated block.\n", size, offset);
+    
+  for(uint32_t i = 0; i < size; i += 1)
+  {
+    printf("%d : %d\n", offset + i, *(memBlockPtr + offset + i));
+  }
+}
+/************************************************************************
+ *
+ * File: smart_mem_display.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the display memory command
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef SMEM_DISPLAY_H
+#define SMEM_DISPLAY_H
+
+#include "command_interface.h"
+
+extern COMMAND_INTERFACE_STRUCT SmartMemDisplayCommandInterface;
+
+#endif
+/************************************************************************
+ *
+ * File: smart_mem_inv.c
+ * Description: Implementation of the command that inverts the values in
+ *              a specified allocated block of memory
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "string.h"
+#include "stdio.h"
+#include "mem_alloc.h"
+
+/**
+ * Name: SmartMemInvValidate
+ * Description: Verify the parameters for the smart invert memory Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t SmartMemInvValidate(char* params);
+
+/**
+ * Name: SmartMemInvExecute
+ * Description: Execute the invert memory command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void SmartMemInvExecute(char* params);
+
+extern uint32_t* memBlockPtr;
+extern uint32_t memBlockSizeBytes;
+
+COMMAND_INTERFACE_STRUCT SmartMemInvCommandInterface =
+{
+  "SINV",
+  "Inverts the values in the block of memory allocated by MALL. \
+  Takes 2 arguments: size and offset. Ex: SINV 10 0",
+  SmartMemInvValidate,
+  SmartMemInvExecute,
+};
+
+
+uint8_t SmartMemInvValidate(char* params)
+{  
+  char* sizeStringPtr;
+  char* offsetStringPtr;
+  char* test;
+  uint8_t hex;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+
+  sizeStringPtr = strtok(paramCopy, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  
+  offsetStringPtr = strtok(NULL, " ");
+
+  if(offsetStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(offsetStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if((convStringToNum(offsetStringPtr) + convStringToNum(offsetStringPtr) > (memBlockSizeBytes/4)))
+  {
+    printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }
+  return 1;
+}
+
+void SmartMemInvExecute(char* params)
+{
+  char* sizeStringPtr;
+  char* offsetStringPtr;
+  
+  // if(params[0] == ' ')
+  // {
+	// params+=1;
+  // }
+
+  sizeStringPtr = strtok(params, " ");
+  offsetStringPtr = strtok(NULL, " ");
+  // printf("params: %s\n", params);
+  // printf("offsetStringPtr: %s\n", offsetStringPtr);
+  // printf("sizeStringPtr: %s\n", sizeStringPtr);
+  uint64_t offset = convStringToNum(offsetStringPtr);
+  uint64_t size = convStringToNum(sizeStringPtr);
+  // printf("size\n: %d", size);
+  // printf("offset\n: %d", offset);
+  for(uint32_t i = 0; i < 5/*size*/; i += 1)
+  {
+	// printf("i:%d\n", i);
+	*(memBlockPtr + offset + i) = *(memBlockPtr + offset + i);// ^ 0xFFFFFFFF;  // instructions explicitly state "Use XOR"
+  }
+}/************************************************************************
+ *
+ * File: smart_mem_inv.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the invert memory block command.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef SMEM_INV_H
+#define SMEM_INV_H
+
+extern COMMAND_INTERFACE_STRUCT SmartMemInvCommandInterface;
+
+#endif
+/************************************************************************
+ *
+ * File: smart_mem_ver_pattern.c
+ * Description: Implementation of the command that verifies that the
+ *              pseudo-random number sequence has been written to a 
+ *              memory block.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "string.h"
+#include "sys/time.h"
+#include "mem_alloc.h"
+
+/**
+ * Name: SmartMemVerPatternValidate
+ * Description: Verify the parameters for the Verify Pattern Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t SmartMemVerPatternValidate(char* params);
+
+/**
+ * Name: SmartMemVerPatternExecute
+ * Description: Execute the verify pattern command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void SmartMemVerPatternExecute(char* params);
+
+
+COMMAND_INTERFACE_STRUCT SmartMemVerPatternCommandInterface =
+{
+  "SVPA",
+  "Verifies Pattern matches the memory space designated by offset and size. Ex SVPA 10 42 0",
+  SmartMemVerPatternValidate,
+  SmartMemVerPatternExecute,
+};
+
+uint8_t SmartMemVerPatternValidate(char* params)
+{
+  char* seedStringPtr;
+  char* sizeStringPtr;
+  char* offsetStringPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  
+  seedStringPtr = strtok(paramCopy, " ");
+  
+  if(seedStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  
+  sizeStringPtr = strtok(NULL, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+	return 0;
+  }  
+
+  offsetStringPtr = strtok(NULL, " ");
+
+  if(offsetStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(seedStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(offsetStringPtr) == 0)
+  {
+    return 0;
+  }
+ 
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+ 
+  if((convStringToNum(offsetStringPtr) + convStringToNum(offsetStringPtr) > (memBlockSizeBytes/4)))
+  {
+    printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }	
+  
+  return 1;
+}
+
+void SmartMemVerPatternExecute(char* params)
+{
+  struct timespec startTime;
+  clock_gettime(CLOCK_REALTIME, &startTime);
+ 
+  char* sizeStringPtr;
+  uint64_t size;
+  char* seedStringPtr;
+  uint64_t seed;
+  char* offsetStringPtr;
+  uint64_t offset;
+  uint8_t patternsMatch = 1;
+  
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+
+  seedStringPtr = strtok(params, " ");
+  sizeStringPtr = strtok(NULL, " ");
+  offsetStringPtr  = strtok(NULL, " ");
+
+  offset = convStringToNum(offsetStringPtr);
+  size = convStringToNum(sizeStringPtr);
+  seed = convStringToNum(seedStringPtr);
+		
+  for(uint32_t i = 0; i < size; i += 1)
+  {
+    seed = seed * 37;
+    uint32_t randNum = seed * ((uint64_t) &convStringToNum) ^ 0xAAAAAAAA;
+    if(*(memBlockPtr + offset + i) != randNum)
+    {
+	  patternsMatch = 0;
+      printf("Mismatch at offset %d. Expected: %d. Found: %d\n", i, randNum, *(memBlockPtr + offset + i));
+    }
+  }
+  
+  if(patternsMatch == 1)
+  {
+	printf("Pattern Match Successful\n");
+    struct timespec endTime;
+    clock_gettime(CLOCK_REALTIME, &endTime);
+    printf("Time taken to verify pattern: %.2f nano seconds\n", (double)(endTime.tv_nsec - startTime.tv_nsec));
+  }	  
+}
+/************************************************************************
+ *
+ * File: smart_mem_ver_pattern.h
+ * Description: Header file that defines the interface to the implementation
+ *              of the verify pseudo-random number patter in memory.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef SMEM_VER_PATTERN_H
+#define SMEM_VER_PATTERN_H
+
+#include "command_interface.h"
+
+extern COMMAND_INTERFACE_STRUCT SmartMemVerPatternCommandInterface;
+
+#endif 
+/************************************************************************
+ *
+ * File: 
+ * Description:
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "string.h"
+#include "mem_alloc.h"
+
+/**
+ * Name: SmartWriteValidate
+ * Description: Verify the parameters for the Smart Write to Memory Command
+ * Argurments: char* params - pointer to the string of the command operands
+ * Return Value: uint8_t (boolean) - 0: operands are bad, do not execute command, 
+ *                                   1: operands are good, execute command
+ */
+uint8_t SmartWriteValidate(char* params);
+
+/**
+ * Name: SmartWriteExecute
+ * Description: Execute the smart write to memory command
+ * Argurments: char* params - pointer to character string of operands
+ * Return Value: NA
+ *
+ */
+void SmartWriteExecute(char* params);
+
+COMMAND_INTERFACE_STRUCT SmartWriteCommandInterface =
+{
+  "SWRT",
+  "Write a 4 byte value to a memory offset from the base of the allocated block. Ex: SWRT 42 1",
+  SmartWriteValidate,
+  SmartWriteExecute,
+};
+
+uint8_t SmartWriteValidate(char* params)
+{
+  char* valueStringPtr;
+  char* addressOffsetStringPtr;
+  char paramCopy[30];
+  uint8_t hex;
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  // printf("paramCopy: %s\n", paramCopy);
+  
+  valueStringPtr = strtok(paramCopy, " ");
+  
+  if(valueStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  addressOffsetStringPtr = strtok(NULL, " ");
+
+  if(addressOffsetStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+  if(isValidNum(valueStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(addressOffsetStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(((uint64_t)convStringToNum(addressOffsetStringPtr) < 0) ||
+     ((uint64_t)convStringToNum(addressOffsetStringPtr) >= (memBlockSizeBytes/4)))
+  {
+    printf("This address has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }
+  
+  return 1;
+}
+
+void SmartWriteExecute(char* params)
+{
+  char* valueStringPtr;
+  char* offsetStringPtr;
+  
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+
+  valueStringPtr = strtok(params, " ");
+  offsetStringPtr = strtok(NULL, " ");  
+
+  printf("Writing %d to %p + %d\n", convStringToNum(valueStringPtr), memBlockPtr, (uint32_t*)convStringToNum(offsetStringPtr));
+  *(memBlockPtr + (uint64_t)convStringToNum(offsetStringPtr)) = convStringToNum(valueStringPtr);
+}
+/************************************************************************
+ *
+ * File: smart_mem_write.h 
+ * Description: Header file that defines the interface to the implementation 
+ *              to the smart memory write command.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef SMART_WRITE_H
+#define SMART_WRITE_H
+
+extern COMMAND_INTERFACE_STRUCT SmartWriteCommandInterface;
+
+
+
+#endif
+/************************************************************************
+ *
+ * File: smart_mem_write_pattern.c
+ * Description: Implementation of command that writes pseudo-random numbers
+ *              to a designated allocated block of memory
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+
+#include "command_interface.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "string.h"
+#include "mem_alloc.h"
+
+/**
+ * Name: SmartMemWritePatternValidate
+ * Description: Verify the operands of the Smart write pattern to memory command
+ * Argurments: char* params - character string of command operands
+ * Return Value: uint8_t (boolean) 0: operands are invalid
+ *                                 1: operands are valid
+ */
+uint8_t SmartMemWritePatternValidate(char* params);
+
+/**
+ * Name: SmartMemWritePatternExecute
+ * Description: Executes the smart write random pattern comman
+ * Argurments: char* params - character string of the operand
+ * Return Value: NA
+ *
+ */
+void SmartMemWritePatternExecute(char* params);
+
+COMMAND_INTERFACE_STRUCT SmartMemWritePatternCommandInterface =
+{
+  "SWPA",
+  "Write a pattern to the allocated memory block by designating size, seed, and offset . Ex: SWPA 10 42 0",
+  SmartMemWritePatternValidate,
+  SmartMemWritePatternExecute,
+};
+
+
+uint8_t SmartMemWritePatternValidate(char* params)
+{
+  char* seedStringPtr;
+  char* sizeStringPtr;
+  char* offsetStringPtr;
+  char paramCopy[30];
+  
+  if(params == NULL)
+  {
+    return 0;
+  }
+  
+  if(strlen(params) > 30)
+  {
+    return 0;
+  }
+  strcpy(paramCopy, params);
+  
+  seedStringPtr = strtok(paramCopy, " ");
+  
+  if(seedStringPtr == NULL)
+  {
+    return 0;
+  }
+
+  sizeStringPtr = strtok(NULL, " ");
+  
+  if(sizeStringPtr == NULL)
+  {
+	return 0;
+  }  
+  
+  offsetStringPtr = strtok(NULL, " ");
+
+  if(offsetStringPtr == NULL)
+  {
+	return 0;
+  }
+  
+
+  
+  if(isValidNum(seedStringPtr) == 0)
+  {
+    return 0;
+  }
+  
+  if(isValidNum(offsetStringPtr) == 0)
+  {
+    return 0;
+  }
+ 
+  if(isValidNum(sizeStringPtr) == 0)
+  {
+    return 0;
+  }
+
+  if((convStringToNum(sizeStringPtr) + convStringToNum(offsetStringPtr) > (memBlockSizeBytes/4)))
+  {
+    printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
+	char* response;
+	char* unused = gets(response);
+	printf(response); // echo
+	if(strcmp(response, "Y") == 0)
+	{
+      return 1;
+	}
+	else
+	{
+      return 0;
+	}
+  }
+  return 1;
+}
+
+void SmartMemWritePatternExecute(char* params)
+{
+  char* sizeStringPtr;
+  uint64_t size;
+  char* seedStringPtr;
+  uint64_t seed;
+  char* offsetStringPtr;
+  uint32_t offset;
+  
+  if(params[0] == ' ')
+  {
+	params+=1;
+  }
+
+  seedStringPtr = strtok(params, " ");
+  sizeStringPtr = strtok(NULL, " ");
+  offsetStringPtr  = strtok(NULL, " ");
+
+  offset = convStringToNum(offsetStringPtr);
+  size = convStringToNum(sizeStringPtr);
+  seed = convStringToNum(seedStringPtr);
+  
+   
+  for(uint32_t i = 0; i < size; i += 1)
+  {
+    seed = seed * 37;
+    *(memBlockPtr + offset + i) = seed * ((uint64_t) &convStringToNum) ^ 0xAAAAAAAAAAAAAAAA;
+  }
+}/************************************************************************
+ *
+ * File: smart_mem_write_pattern.h
+ * Description: Header file that defines the interface to the interface 
+ *              write pseudo-random number sequence into memory command.
+ * 
+ * Author: Sean Duffy
+ * Tools: gcc
+ * Leveraged Code: See "#include"s
+ * Links: NA
+ *
+***********************************************************************/
+#ifndef SMEM_WRITE_PATTERN_H
+#define SMEM_WRITE_PATTERN_H
+
+extern COMMAND_INTERFACE_STRUCT SmartMemWritePatternCommandInterface;
+
+#endif

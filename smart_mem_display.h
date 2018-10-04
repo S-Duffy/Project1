@@ -1,6 +1,6 @@
 /************************************************************************
  *
- * File: mem_display.h
+ * File: smart_mem_display.h
  * Description: Header file that defines the interface to the implementation
  *              of the display memory command
  * 
@@ -10,15 +10,11 @@
  * Links: NA
  *
 ***********************************************************************/
-#ifndef MEM_DISPLAY_H
-#define MEM_DISPLAY_H
+#ifndef SMEM_DISPLAY_H
+#define SMEM_DISPLAY_H
 
 #include "command_interface.h"
 
-extern COMMAND_INTERFACE_STRUCT MemDisplayCommandInterface;
-
-
-
-
+extern COMMAND_INTERFACE_STRUCT SmartMemDisplayCommandInterface;
 
 #endif

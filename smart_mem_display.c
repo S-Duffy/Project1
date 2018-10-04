@@ -1,6 +1,6 @@
 /************************************************************************
  *
- * File: mem_display.c
+ * File: smart_mem_display.c
  * Description: Implementation of command that prints blocks of memory via stdio
  * 
  * Author: Sean Duffy
@@ -14,39 +14,40 @@
 #include "stdint.h"
 #include "string.h"
 #include "stdio.h"
+#include "mem_alloc.h"
 
 /**
- * Name: MemDisplayValidate
- * Description: Validates the operands of the display memory command
+ * Name: SmartMemDisplayValidate
+ * Description: Validates the operands of the smart display memory command
  * Argurments: char* params - character string of operands
  * Return Value: uint8_t (boolean) 0: operands are invalid
  *                                 1: operands are valid
  */
-uint8_t MemDisplayValidate(char* params);
+uint8_t SmartMemDisplayValidate(char* params);
 
 /**
- * Name: MemFreeExecute
+ * Name: SmartMemDisplayExecute
  * Description: Executes the display memory command
  * Argurments: char* params - character string of the operands
  * Return Value: NA
  *
  */
-void MemDisplayExecute(char* params);
+void SmartMemDisplayExecute(char* params);
 
-COMMAND_INTERFACE_STRUCT MemDisplayCommandInterface =
+COMMAND_INTERFACE_STRUCT SmartMemDisplayCommandInterface =
 {
-  "MDIS",
-  "Displays a block of memory. Takes 2 arguments: Starting Address and Size (in 4 byte words). Ex: MDIS 100 0x12345678",
-  MemDisplayValidate,
-  MemDisplayExecute,
+  "SDIS",
+  "Displays a block of memory. Takes 2 arguments: Starting offset and Size (in 4 byte words). Ex: SDIS 100 0",
+  SmartMemDisplayValidate,
+  SmartMemDisplayExecute,
 };
 
 extern uint32_t* memBlockPtr;
 extern uint32_t memBlockSizeBytes;
-uint8_t MemDisplayValidate(char* params)
+uint8_t SmartMemDisplayValidate(char* params)
 {
   char* sizeStringPtr;
-  char* validateStartAddressStringPtr;
+  char* offsetStringPtr;
   char paramCopy[30];
   
   if(params == NULL)
@@ -68,9 +69,9 @@ uint8_t MemDisplayValidate(char* params)
     return 0;
   }
 
-  validateStartAddressStringPtr = strtok(NULL, " ");
+  offsetStringPtr = strtok(NULL, " ");
 
-  if(validateStartAddressStringPtr == NULL)
+  if(offsetStringPtr == NULL)
   {
 	return 0;
   }
@@ -80,15 +81,14 @@ uint8_t MemDisplayValidate(char* params)
     return 0;
   }
   
-  if(isValidNum(validateStartAddressStringPtr) == 0)
+  if(isValidNum(offsetStringPtr) == 0)
   {
     return 0;
   }
   
-  if(((uint32_t*)convStringToNum(validateStartAddressStringPtr) < memBlockPtr) ||
-     ((uint32_t*)convStringToNum(validateStartAddressStringPtr) >= memBlockPtr + (memBlockSizeBytes/4)))
+  if((convStringToNum(offsetStringPtr) +convStringToNum(offsetStringPtr) > (memBlockSizeBytes/4)))
   {
-    printf("%p has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n", convStringToNum(validateStartAddressStringPtr));
+    printf("At least part of this block has not been allocated for use. Continue anyway?\n('Y' = Yes, Other = No)\n");
 	char* response;
 	char* unused = gets(response);
 	printf(response); // echo
@@ -105,10 +105,10 @@ uint8_t MemDisplayValidate(char* params)
   return 1;
 }
 
-void MemDisplayExecute(char* params)
+void SmartMemDisplayExecute(char* params)
 {
   char* sizeStringPtr;
-  char* startAddressStringPtr;
+  char* offsetStringPtr;
 
   if(params[0] == ' ')
   {
@@ -116,15 +116,15 @@ void MemDisplayExecute(char* params)
   }
   // printf("params: %s\n", params);
   sizeStringPtr = strtok(params, " ");
-  startAddressStringPtr = strtok(NULL, " ");
+  offsetStringPtr = strtok(NULL, " ");
   
-  uint32_t* startingAddress = (uint32_t*) convStringToNum(startAddressStringPtr);
+  uint64_t offset = convStringToNum(offsetStringPtr);
   
   uint64_t size = convStringToNum(sizeStringPtr);
-  printf("Reading %d words starting at address %p\n", size, startingAddress);
+  printf("Reading %d words starting at offset %d from start of allocated block.\n", size, offset);
     
   for(uint32_t i = 0; i < size; i += 1)
   {
-    printf("%p : %d\n", startingAddress + i, *(startingAddress + i));
+    printf("%d : %d\n", offset + i, *(memBlockPtr + offset + i));
   }
 }

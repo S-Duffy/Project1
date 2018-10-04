@@ -1,6 +1,6 @@
 /************************************************************************
  *
- * File: mem_write_pattern.h
+ * File: smart_mem_write_pattern.h
  * Description: Header file that defines the interface to the interface 
  *              write pseudo-random number sequence into memory command.
  * 
@@ -10,9 +10,9 @@
  * Links: NA
  *
 ***********************************************************************/
-#ifndef MEM_WRITE_PATTERN_H
-#define MEM_WRITE_PATTERN_H
+#ifndef SMEM_WRITE_PATTERN_H
+#define SMEM_WRITE_PATTERN_H
 
-extern COMMAND_INTERFACE_STRUCT MemWritePatternCommandInterface;
+extern COMMAND_INTERFACE_STRUCT SmartMemWritePatternCommandInterface;
 
 #endif
