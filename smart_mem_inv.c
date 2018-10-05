@@ -17,6 +17,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "mem_alloc.h"
+#include "time.h"
 
 /**
  * Name: SmartMemInvValidate
@@ -118,16 +119,17 @@ void SmartMemInvExecute(char* params)
 
   sizeStringPtr = strtok(params, " ");
   offsetStringPtr = strtok(NULL, " ");
-  // printf("params: %s\n", params);
-  // printf("offsetStringPtr: %s\n", offsetStringPtr);
-  // printf("sizeStringPtr: %s\n", sizeStringPtr);
   uint64_t offset = convStringToNum(offsetStringPtr);
   uint64_t size = convStringToNum(sizeStringPtr);
-  // printf("size\n: %d", size);
-  // printf("offset\n: %d", offset);
-  for(uint32_t i = 0; i < 5/*size*/; i += 1)
+  
+  struct timespec startTime;
+  clock_gettime(CLOCK_REALTIME, &startTime);
+  for(uint32_t i = 0; i < size; i += 1)
   {
-	// printf("i:%d\n", i);
 	*(memBlockPtr + offset + i) = *(memBlockPtr + offset + i);// ^ 0xFFFFFFFF;  // instructions explicitly state "Use XOR"
   }
+  
+  struct timespec endTime;
+  clock_gettime(CLOCK_REALTIME, &endTime);
+  printf("Time taken to invert block: %.2f nano seconds\n", (double)(endTime.tv_nsec - startTime.tv_nsec));
 }

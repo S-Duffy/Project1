@@ -1,0 +1,31 @@
+Project 1 Report
+
+
+1. Ignoring the functionality that was added to the assignent after the Project Plan was made
+   my overall estimate was fairly accurate, although the effort allocated to each line item was
+   fairly inaccurate. For example, most of my code development estimates were a little aggressive.
+   This is likely because I was pushing myself to use a new text editor (vim) for some part of the
+   project and also because I was relatively unfamiliar with the string library which I ended up
+   utilizing substantially. However, creating the makefile and managing the git repository took
+   much less time than I expected. I was fairly unfamiliar with these tools before the project,
+   but they were easier to use than I expected. In the case of git, this was likely because 
+   I was working alone.
+   
+2. I did not include the development of the automated test script in my original project plan. 
+   Luckily, this task did not take much effort.
+   
+3. TBD
+
+4. When trying to read outside of an allocated block (assuming you ignore the warning), there 
+   are 2 possible outcomes. The first possible outcome is that the read occurs normally and the
+   value stored in that memory location is displayed to the screen. The second possible outcome
+   is that a segmentation fault occurs because that memory address either doesn't exist or 
+   is not available for reading by this program.
+   
+5. When trying to write outside of an allocated block (assuming you ignore the warning), there 
+   are 2 possible outcomes. The first possible outcome is that the write occurs normally and the
+   value is written to the unallocated memory location. The second possible outcome is that a 
+   segmentation fault occurs because that memory address either doesn't exist or  is not 
+   available for writing by this program.
+   
+6. 
