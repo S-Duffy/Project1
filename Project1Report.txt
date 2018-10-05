@@ -28,4 +28,10 @@ Project 1 Report
    segmentation fault occurs because that memory address either doesn't exist or  is not 
    available for writing by this program.
    
-6. 
+6. No, the time to invert different size blocks of memory did not appear to be linear to the 
+   size of the block. In fact, there was even some variability within the measured time taken
+   to invert the same block of memory between different trials (see #7). However, as the size 
+   of the blocks increased, the relationship seemed to become more linear, with the most
+   non-linearity coming from inverting the smallest blocks (also probably related to #7).
+   
+7.

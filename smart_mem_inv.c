@@ -126,7 +126,7 @@ void SmartMemInvExecute(char* params)
   clock_gettime(CLOCK_REALTIME, &startTime);
   for(uint32_t i = 0; i < size; i += 1)
   {
-	*(memBlockPtr + offset + i) = *(memBlockPtr + offset + i);// ^ 0xFFFFFFFF;  // instructions explicitly state "Use XOR"
+	*(memBlockPtr + offset + i) = *(memBlockPtr + offset + i) ^ 0xFFFFFFFF;  // instructions explicitly state "Use XOR"
   }
   
   struct timespec endTime;
