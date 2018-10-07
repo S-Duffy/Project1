@@ -82,8 +82,14 @@ uint8_t MemAllocValidate(char* params)
 void MemAllocExecute(char* params)
 {
   char* sizeInWordsPtr = strtok(params, " ");
+  uint64_requestedSizeInWords = convStringToNum(sizeInWordsPtr);
   uint16_t sizeInWords = convStringToNum(sizeInWordsPtr);
 
+  if(sizeInWords <uint64_requestedSizeInWords)
+  {
+     printf("Sorry, max supported size is 65535 words\n");   
+  }
+  
   memBlockPtr = malloc(sizeInWords * 4);
   memBlockSizeBytes = sizeInWords * 4;
   if(memBlockPtr != NULL)
@@ -92,6 +98,6 @@ void MemAllocExecute(char* params)
   }
   else
   {
-    printf("Sorry, a memory block of that size was not available, try a smaller size");    
+    printf("Sorry, a memory block of that size was not available, try a smaller size\n");    
   }
 }

@@ -1,5 +1,9 @@
 Project 1 Report
 
+Front Matter: Sean Duffy 
+              2018-10-07
+			  Project 1 
+			  ECEN5813
 
 1. Ignoring the functionality that was added to the assignent after the Project Plan was made
    my overall estimate was fairly accurate, although the effort allocated to each line item was
@@ -14,7 +18,7 @@ Project 1 Report
 2. I did not include the development of the automated test script in my original project plan. 
    Luckily, this task did not take much effort.
    
-3. TBD
+3. TODO
 
 4. When trying to read outside of an allocated block (assuming you ignore the warning), there 
    are 2 possible outcomes. The first possible outcome is that the read occurs normally and the
@@ -34,4 +38,30 @@ Project 1 Report
    of the blocks increased, the relationship seemed to become more linear, with the most
    non-linearity coming from inverting the smallest blocks (also probably related to #7).
    
-7.
+7. There are a few limitations to the time measurements made here. Time measurements made by
+   any digital computer system are limited in resolution by the frequency of some oscillator.
+   This means that differences less than that resolution are not reflected in the measurement.
+   These time measurements are also impacted by the operating system that is managing the tasks
+   on this computer. This effects our measurement of the time taken to execute our command because
+   the operating system may briefly stop executing our command to perform other tasks. Time measurements
+   are also limited in range in digital systems by a finite amount of storage space allocated for them,
+   but those limitations are less relevant here.
+   
+8. To optimize my program purely for speed, I could:
+    - combine my command validation and command execution functions to reduce function-call overhead
+	- write specialized string handling functions for handling only the required functionality here
+
+9. My pseudo-random number generator was a simple function that multiplied a compounding seed
+   by an arbitarily-chosen prime number (37). Then, the number that is written is the product of the
+   new seed and the address of a public function accessible by all modules and every other bit is 
+   flipped (^0xAA..). The advantages of this algorithm are that it is cheap in terms of memory and
+   computation time. The fact that this generator uses the address of a function which is
+   means that the sequence can change from executions of the executable. This can be considered 
+   an advantage or a disadvantage. It makes it more difficult to formally validate, but it does
+   increase the unpredicitability of the result in some scenarios. 
+   
+
+
+
+
+
